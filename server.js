@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 
 const app = express();
@@ -56,7 +58,7 @@ app.put('/api/produtos/:id', (req, res) =>{
         produtos[produtoIndex] = {
             ...produtos[produtoIndex],
             nome: nome !== undefined ? nome : produtos[produtoIndex].nome,
-            preco: preco !== undefined ? preco : produtos[produtoIndex].prreco
+            preco: preco !== undefined ? preco : produtos[produtoIndex].preco
         };
 
         res.json(produtos[produtoIndex]);
