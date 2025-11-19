@@ -8,9 +8,11 @@ app.use(express.json());
 
 
 const produtoRoutes = require('./routes/produtoRoutes');
+const usuarioRoutes = require('./routes/usuarioRoutes');
 
 
 app.use('/api/produtos', produtoRoutes);
+app.use('/api/usuarios', usuarioRoutes);
 
 
 app.get('/', (req, res) => {
