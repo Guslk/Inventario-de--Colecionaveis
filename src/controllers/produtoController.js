@@ -1,13 +1,15 @@
-const produtoModel = require('../models/produtoModel');
+// controllers/produtoController.js 
+
+
+const Produto = require('../models/produto');
 
 
 exports.getAllProdutos = async (req, res) => {
     try {
-        
-        const produtos = await produtoModel.findAll();
+        const produtos = await Produto.findAll(); 
         res.json(produtos);
     } catch (err) {
-        res.status(500).json({ message: "Erro no servidor ao buscar produtos." });
+        res.status(500).json({ message: "Erro no servidor." });
     }
 };
 
@@ -15,7 +17,7 @@ exports.getAllProdutos = async (req, res) => {
 exports.getProdutoById = async (req, res) => {
     const id = parseInt(req.params.id);
     try {
-        const produto = await produtoModel.findById(id);
+        const produto = await Produto.findByPk(id); 
         if (produto) {
             res.json(produto);
         } else {
@@ -35,10 +37,10 @@ exports.createProduto = async (req, res) => {
 
     try {
         
-        const novoProduto = await produtoModel.create(nome, preco);
+        const novoProduto = await Produto.create({ nome, preco });
         res.status(201).json(novoProduto);
     } catch (err) {
-        res.status(500).json({ message: "Erro no servidor ao criar produto." });
+        res.status(500).json({ message: "Erro no servidor." });
     }
 };
 
@@ -52,14 +54,19 @@ exports.updateProduto = async (req, res) => {
     }
 
     try {
-        const result = await produtoModel.update(id, nome, preco);
-        if (result.changes > 0) {
-            res.json({ id, nome, preco });
+        
+        const [updated] = await Produto.update({ nome, preco }, {
+            where: { id: id }
+        });
+
+        if (updated) {
+            const produtoAtualizado = await Produto.findByPk(id);
+            res.json(produtoAtualizado);
         } else {
-            res.status(404).json({ message: 'Produto não encontrado para atualização.' });
+            res.status(404).json({ message: 'Produto não encontrado.' });
         }
     } catch (err) {
-        res.status(500).json({ message: "Erro no servidor ao atualizar produto." });
+        res.status(500).json({ message: "Erro no servidor." });
     }
 };
 
@@ -68,13 +75,16 @@ exports.deleteProduto = async (req, res) => {
     const id = parseInt(req.params.id);
 
     try {
-        const result = await produtoModel.delete(id);
-        if (result.changes > 0) {
+        const deleted = await Produto.destroy({
+            where: { id: id }
+        });
+
+        if (deleted) {
             res.status(204).send(); 
         } else {
-            res.status(404).json({ message: 'Produto não encontrado para exclusão.' });
+            res.status(404).json({ message: 'Produto não encontrado.' });
         }
     } catch (err) {
-        res.status(500).json({ message: "Erro no servidor ao deletar produto." });
+        res.status(500).json({ message: "Erro no servidor." });
     }
 };
