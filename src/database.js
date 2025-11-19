@@ -1,12 +1,10 @@
-
 const { Sequelize } = require('sequelize');
-
 
 const sequelize = new Sequelize({
     dialect: 'sqlite',
-    storage: 'meu_banco.db'
+    storage: 'meu_banco.db',
+    logging: false 
 });
-
 
 async function testConnection() {
     try {
@@ -17,6 +15,9 @@ async function testConnection() {
     }
 }
 
-testConnection();
+
+if (require.main === module) {
+    testConnection();
+}
 
 module.exports = sequelize;

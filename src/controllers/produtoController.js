@@ -7,7 +7,7 @@ const Produto = require('../models/produto');
 exports.getAllProdutos = async (req, res) => {
     try {
         const produtos = await Produto.findAll(); 
-        res.json(produtos);
+        res.status(200).json(produtos);
     } catch (err) {
         res.status(500).json({ message: "Erro no servidor." });
     }
