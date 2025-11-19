@@ -7,12 +7,12 @@ const produtoController = require('../controllers/produtoController');
 const { verificaToken } = require('../middlewares/authMiddleware');
 
 
-router.get('/', produtoController.listarTodos);
-router.get('/:id', produtoController.buscarPorId);
+router.get('/', produtoController.getAllProdutos);
+router.get('/:id', produtoController.getProdutoById);
 
 
-router.post('/', verificaToken, produtoController.criar);
-router.put('/:id', verificaToken, produtoController.atualizar);
-router.delete('/:id', verificaToken, produtoController.deletar);
+router.post('/', verificaToken, produtoController.createProduto);
+router.put('/:id', verificaToken, produtoController.updateProduto);
+router.delete('/:id', verificaToken, produtoController.deleteProduto);
 
 module.exports = router;

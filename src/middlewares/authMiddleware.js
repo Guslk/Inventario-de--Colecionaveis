@@ -1,6 +1,7 @@
 // src/middlewares/authMiddleware.js
 const jwt = require('jsonwebtoken');
 
+
 exports.verificaToken = (req, res, next) => {
 
   const authHeader = req.headers['authorization'];
@@ -22,7 +23,6 @@ exports.verificaToken = (req, res, next) => {
     res.status(403).json({ message: "Token inválido ou expirado." }); 
   }
 };
-const jwt = require('jsonwebtoken');
 const JWT_SECRET = 'seu-segredo-super-secreto'; 
 
 exports.verificaToken = (req, res, next) => {
