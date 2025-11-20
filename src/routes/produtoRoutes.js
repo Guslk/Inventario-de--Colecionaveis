@@ -15,4 +15,4 @@ router.post('/', verificaToken, produtoController.createProduto);
 router.put('/:id', verificaToken, produtoController.updateProduto);
 router.delete('/:id', verificaToken, produtoController.deleteProduto);
 
-module.exports = router;
+module.exports = router;    
