@@ -2,28 +2,19 @@
 const express = require('express');
 const app = express();
 
-const sequelize = require('./database'); 
-const Produto = require('./models/produto');
+// Import models
+require('./models/Colecionavel'); 
 const Usuario = require('./models/Usuario');
 
 app.use(express.json());
 
-
-
-const produtoRoutes = require('./routes/produtoRoutes');
+// Import routes
+const colecionavelRoutes = require('./routes/colecionavelRoutes'); 
 const usuarioRoutes = require('./routes/usuarioRoutes');
 
-
-app.use('/api/produtos', produtoRoutes);
+// Use routes
+app.use('/api/colecionaveis', colecionavelRoutes); 
 app.use('/api/usuarios', usuarioRoutes);
 
-
-app.get('/', (req, res) => {
-  res.send('API de Produtos funcionando!');
-});
-
-app.get('/api/health-check', (req, res) => {
-    res.status(200).json({ status: 'ok' });
-});
 
 module.exports = app;
