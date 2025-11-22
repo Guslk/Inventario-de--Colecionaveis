@@ -22,7 +22,7 @@ exports.obterPorId = async (req, res) => {
 
 exports.criar = async (req, res) => {
   try {
-    // O middleware de auth coloca o usuário descodificado em req.usuario
+    // O middleware de auth coloca o usuário em req.usuario
     const idUsuarioLogado = req.usuario.id;
     
     const { nome, categoria, ano, condicao } = req.body;
