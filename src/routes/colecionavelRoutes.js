@@ -6,7 +6,9 @@ const authMiddleware = require('../middlewares/authMiddleware');
 
 // Rotas Públicas
 router.get('/', colecionavelController.listar);
+router.get('/resumo', colecionavelController.resumo);
 router.get('/:id', colecionavelController.obterPorId);
+
 
 // Rotas Protegidas (Precisam de Token)
 router.post('/', authMiddleware.verificaToken, colecionavelController.criar);

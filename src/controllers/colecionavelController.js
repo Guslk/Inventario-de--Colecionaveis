@@ -21,6 +21,30 @@ exports.listar = async (req, res) => {
   }
 };
 
+exports.resumo = async (req, res) => {
+  try {
+    
+    const totalItens = await Colecionavel.count();
+    
+    
+    const totalCategorias = await Colecionavel.count({
+      distinct: true,
+      col: 'categoria'
+    });
+
+    
+    const itemMaisAntigo = await Colecionavel.min('ano');
+
+    res.json({
+      totalItens,
+      totalCategorias,
+      anoMaisAntigo: itemMaisAntigo
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao gerar resumo.' });
+  }
+};
+
 exports.obterPorId = async (req, res) => {
   try {
     const item = await Colecionavel.findByPk(req.params.id);
