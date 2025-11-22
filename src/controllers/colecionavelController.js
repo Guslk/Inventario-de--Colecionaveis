@@ -3,9 +3,20 @@ const Colecionavel = require('../models/Colecionavel');
 
 exports.listar = async (req, res) => {
   try {
-    const itens = await Colecionavel.findAll();
+    const { categoria, ano } = req.query;
+    const where = {};
+    if (categoria) {
+      where.categoria = categoria;
+    }
+    if (ano) {
+      where.ano = ano;
+    }
+    const itens = await Colecionavel.findAll({
+      where: where
+    });
     res.json(itens);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Erro ao buscar itens.' });
   }
 };
