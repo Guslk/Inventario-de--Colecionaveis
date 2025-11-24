@@ -1,0 +1,76 @@
+// tests/colecionavelController.test.js
+const colecionavelController = require('../controllers/colecionavelController');
+const Colecionavel = require('../models/Colecionavel');
+
+// MOCK MÁGICO: "Fingimos" que o banco de dados é este objeto
+jest.mock('../models/Colecionavel');
+
+describe('ColecionavelController - Testes Unitários', () => {
+
+    afterEach(() => { jest.clearAllMocks(); });
+
+    // --- CENÁRIO 1: LISTAGEM (O Caminho Feliz) ---
+    it('LISTAR: deve retornar todos os itens (Status 200)', async () => {
+        const mockItens = [{ id: 1, nome: 'Item A' }];
+        Colecionavel.findAll.mockResolvedValue(mockItens); // Banco retorna isso
+        
+        const req = { query: {} };
+        const res = { json: jest.fn() };
+
+        await colecionavelController.listar(req, res);
+        expect(res.json).toHaveBeenCalledWith(mockItens);
+    });
+
+    // --- CENÁRIO 2: REGRA DE NEGÓCIO (Vínculo Automático) ---
+    it('CRIAR: deve salvar novo item vinculado ao usuário logado', async () => {
+        const novoItem = { nome: 'Novo' };
+        Colecionavel.create.mockResolvedValue({ id: 1, ...novoItem });
+        
+        // Simula Usuário ID 10 logado
+        const req = { body: novoItem, usuario: { id: 10 } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await colecionavelController.criar(req, res);
+        
+        // Verifica se o ID 10 foi inserido automaticamente
+        expect(Colecionavel.create).toHaveBeenCalledWith(expect.objectContaining({ usuarioId: 10 }));
+        expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    // --- CENÁRIO 3: SEGURANÇA (Bloqueio de Intruso) ---
+    it('ATUALIZAR: deve negar se for intruso (Status 403)', async () => {
+        // Item pertence ao Usuário 99
+        const itemExistente = { id: 1, usuarioId: 99 }; 
+        Colecionavel.findByPk.mockResolvedValue(itemExistente);
+        
+        // Usuário 10 tenta alterar
+        const req = { params: { id: 1 }, usuario: { id: 10 } }; 
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await colecionavelController.atualizar(req, res);
+
+        // O sistema DEVE bloquear
+        expect(res.status).toHaveBeenCalledWith(403);
+    });
+
+    // --- CENÁRIO 4: RESILIÊNCIA (Erro do Servidor) ---
+    it('LISTAR: deve tratar erro do banco (Status 500)', async () => {
+        Colecionavel.findAll.mockRejectedValue(new Error('Erro DB'));
+        const req = { query: {} };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+        
+        const spy = jest.spyOn(console, 'error').mockImplementation(() => {}); // Silencia
+        await colecionavelController.listar(req, res);
+        expect(res.status).toHaveBeenCalledWith(500);
+        spy.mockRestore();
+    });
+
+    // (Outros testes auxiliares para fechar 100% podem ficar aqui embaixo...)
+    it('BUSCAR ID: 404', async () => {
+        Colecionavel.findByPk.mockResolvedValue(null);
+        const req = { params: { id: 999 } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+        await colecionavelController.obterPorId(req, res);
+        expect(res.status).toHaveBeenCalledWith(404);
+    });
+});
