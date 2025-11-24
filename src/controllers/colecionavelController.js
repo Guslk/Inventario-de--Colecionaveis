@@ -97,19 +97,23 @@ exports.atualizar = async (req, res) => {
 
 exports.deletar = async (req, res) => {
   try {
-    const idUsuarioLogado = req.usuario.id;
+    
+    const { id: idUsuarioLogado, isAdmin } = req.usuario; 
+    
     const item = await Colecionavel.findByPk(req.params.id);
 
     if (!item) return res.status(404).json({ error: 'Item não encontrado.' });
 
-    // Verificação de Segurança: Só o dono pode deletar
-    if (item.usuarioId !== idUsuarioLogado) {
+    
+    if (item.usuarioId !== idUsuarioLogado && !isAdmin) {
         return res.status(403).json({ error: 'Você não tem permissão para deletar este item.' });
     }
 
     await item.destroy();
     res.json({ message: 'Item removido com sucesso.' });
   } catch (error) {
+    
+    console.error(error); 
     res.status(500).json({ error: 'Erro ao deletar item.' });
   }
 };

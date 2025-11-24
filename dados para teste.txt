@@ -15,6 +15,13 @@ Body: JSON com nome, email, senha.
   "senha": "123456"
 }
 
+{
+  "nome": "Usuario Teste3",
+  "email": "teste3@exemplo.com",
+  "senha": "123456",
+  "codigoSecreto" : "MASTER"
+}
+
 // logar um usuario
 
 Método: POST
@@ -36,16 +43,23 @@ Método: POST
 
 URL: http://localhost:3000/api/colecionaveis
 Body: JSON com nome, categoria, ano, condicao.
-{ "nome" : "Bulbasaur" , 
-  "categoria" : "Pokemon" ,
-  "ano" : 2008 , 
-  "condicao" : "Nova"  
-  }
 
 { "nome" : "Squirtle" , 
   "categoria" : "Pokemon" ,
+  "ano" : 2008 , 
+  "condicao" : "Lacrada"  
+  }
+
+{ "nome" : "Bulbasaur" , 
+  "categoria" : "Pokemon" ,
   "ano" : 2006 , 
   "condicao" : "Nova"  
+  }
+
+{ "nome" : "Charmander" , 
+  "categoria" : "Pokemon" ,
+  "ano" : 2005 , 
+  "condicao" : "Usada"  
   }
 
 //Atualizar um item
@@ -54,8 +68,9 @@ Método: PUT
 
 URL: http://localhost:3000/api/colecionaveis/1
 Body: JSON com nome, categoria, ano, condicao.
-{ "nome" : "Charmander" , 
+
+{ "nome" : "Pikachu" , 
   "categoria" : "Pokemon" ,
-  "ano" : 2005 , 
+  "ano" : 2007 , 
   "condicao" : "Seminova"  
   }
