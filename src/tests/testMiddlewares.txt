@@ -1,0 +1,53 @@
+// tests/authMiddleware.test.js
+const authMiddleware = require("../middlewares/authMiddleware");
+const jwt = require("jsonwebtoken");
+
+jest.mock("jsonwebtoken");
+
+describe("AuthMiddleware - Cobertura 100%", () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("deve retornar 401 se não houver token no header", () => {
+    const req = { headers: {} }; // Sem header authorization
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    authMiddleware.verificaToken(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("deve chamar next() e popular req.usuario se token for válido", () => {
+    const req = { headers: { authorization: "Bearer token_valido" } };
+    const res = {};
+    const next = jest.fn();
+
+    // Mock: JWT verifica e retorna dados do usuário
+    const dadosUsuario = { id: 1, nome: "Teste" };
+    jwt.verify.mockReturnValue(dadosUsuario);
+
+    authMiddleware.verificaToken(req, res, next);
+
+    expect(req.usuario).toEqual(dadosUsuario); // Verifica se populou o req
+    expect(next).toHaveBeenCalled(); // Verifica se deixou passar
+  });
+
+  it("deve retornar 403 se o token for inválido/expirado", () => {
+    const req = { headers: { authorization: "Bearer token_ruim" } };
+    const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    const next = jest.fn();
+
+    // Mock: JWT estoura um erro
+    jwt.verify.mockImplementation(() => {
+      throw new Error("Token inválido");
+    });
+
+    authMiddleware.verificaToken(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
+  });
+});

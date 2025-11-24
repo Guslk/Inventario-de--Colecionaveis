@@ -1,0 +1,52 @@
+//npx jest --coverage --silent //
+
+
+
+// tests/api.test.js
+
+const request = require("supertest");
+const app = require("../app");
+const Colecionavel = require("../models/Colecionavel"); // <--- Nome corrigido
+
+// MOCK MÁGICO
+jest.mock("../models/Colecionavel");
+
+describe("API de Colecionaveis (com Mocks)", () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  // --- TESTE DE ROTA: GET / ---
+  it("GET /api/colecionaveis - Deve retornar a lista de itens", async () => {
+    const mockItens = [{ id: 1, nome: "Item Teste Rota", preco: 100 }];
+
+    Colecionavel.findAll.mockResolvedValue(mockItens);
+
+    // IMPORTANTE: Verifique no seu app.js se a rota é '/api/colecionaveis' ou '/api/produtos'
+    // Estou assumindo '/api/colecionaveis' pelo nome do projeto
+    const response = await request(app).get("/api/colecionaveis").expect(200);
+
+    expect(response.body).toEqual(mockItens);
+    expect(Colecionavel.findAll).toHaveBeenCalledTimes(1);
+  });
+
+  // --- TESTE DE ROTA: GET /:id (Sucesso) ---
+  it("GET /api/colecionaveis/:id - Deve retornar um único item", async () => {
+    const mockItem = { id: 10, nome: "Item ID Rota", preco: 50 };
+
+    Colecionavel.findByPk = jest.fn().mockResolvedValue(mockItem);
+
+    const response = await request(app)
+      .get("/api/colecionaveis/10")
+      .expect(200);
+
+    expect(response.body).toEqual(mockItem);
+  });
+
+  // --- TESTE DE ROTA: GET /:id (Erro 404) ---
+  it("GET /api/colecionaveis/:id - Deve retornar 404 se não existir", async () => {
+    Colecionavel.findByPk = jest.fn().mockResolvedValue(null);
+
+    await request(app).get("/api/colecionaveis/9999").expect(404);
+  });
+});

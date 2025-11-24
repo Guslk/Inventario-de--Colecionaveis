@@ -1,0 +1,110 @@
+// tests/usuarioController.test.js
+const usuarioController = require('../controllers/usuarioController');
+const Usuario = require('../models/Usuario');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
+// MOCKS DAS DEPENDÊNCIAS
+jest.mock('../models/Usuario');
+jest.mock('bcryptjs');
+jest.mock('jsonwebtoken');
+
+describe('UsuarioController - Cobertura 100%', () => {
+
+    afterEach(() => {
+        jest.clearAllMocks();
+    });
+
+    // ========================================================
+    // 1. CRIAR USUÁRIO (Cadastro)
+    // ========================================================
+    it('CRIAR: deve cadastrar usuário com sucesso (Status 201)', async () => {
+        Usuario.findOne.mockResolvedValue(null);
+        bcrypt.hashSync.mockReturnValue('senha_criptografada');
+        Usuario.create.mockResolvedValue({ 
+            id: 1, 
+            nome: 'Teste', 
+            email: 'teste@email.com' 
+        });
+
+        const req = { body: { nome: 'Teste', email: 'teste@email.com', senha: '123' } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await usuarioController.criarUsuario(req, res);
+
+        expect(Usuario.create).toHaveBeenCalled();
+        expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    it('CRIAR: deve retornar 400 se email já existe', async () => {
+        Usuario.findOne.mockResolvedValue({ id: 1, email: 'teste@email.com' });
+        const req = { body: { email: 'teste@email.com' } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await usuarioController.criarUsuario(req, res);
+        expect(res.status).toHaveBeenCalledWith(400);
+    });
+
+    it('CRIAR: deve retornar 500 se houver erro no servidor', async () => {
+        Usuario.findOne.mockRejectedValue(new Error('Erro DB'));
+        const req = { body: { email: 'teste@email.com' } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        // Silenciador de console
+        const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+        await usuarioController.criarUsuario(req, res);
+        expect(res.status).toHaveBeenCalledWith(500);
+        
+        spy.mockRestore(); // Restaura o console
+    });
+
+    // ========================================================
+    // 2. LOGIN
+    // ========================================================
+    it('LOGIN: deve logar com sucesso e gerar token (Status 200)', async () => {
+        const usuarioMock = { id: 1, nome: 'Teste', email: 'teste@email.com', senha: 'hash' };
+        Usuario.findOne.mockResolvedValue(usuarioMock);
+        bcrypt.compareSync.mockReturnValue(true);
+        jwt.sign.mockReturnValue('token_falso_jwt');
+
+        const req = { body: { email: 'teste@email.com', senha: '123' } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await usuarioController.login(req, res);
+        expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('LOGIN: deve retornar 401 se usuário não existe', async () => {
+        Usuario.findOne.mockResolvedValue(null);
+        const req = { body: { email: 'errado@email.com' } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await usuarioController.login(req, res);
+        expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it('LOGIN: deve retornar 401 se senha estiver errada', async () => {
+        Usuario.findOne.mockResolvedValue({ senha: 'hash' });
+        bcrypt.compareSync.mockReturnValue(false);
+        const req = { body: { email: 'teste@email.com', senha: 'errada' } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await usuarioController.login(req, res);
+        expect(res.status).toHaveBeenCalledWith(401);
+    });
+
+    it('LOGIN: deve retornar 500 se houver erro no servidor', async () => {
+        Usuario.findOne.mockRejectedValue(new Error('Erro DB'));
+        const req = { body: {} };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        // Silenciador de console
+        const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+        await usuarioController.login(req, res);
+        expect(res.status).toHaveBeenCalledWith(500);
+        
+        spy.mockRestore();
+    });
+});
