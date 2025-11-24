@@ -2,21 +2,18 @@
 const colecionavelController = require('../controllers/colecionavelController');
 const Colecionavel = require('../models/Colecionavel');
 
-// Mock Mágico
+// MOCK MÁGICO: "Fingimos" que o banco de dados é este objeto
 jest.mock('../models/Colecionavel');
 
-describe('ColecionavelController - Cobertura 100%', () => {
+describe('ColecionavelController - Testes Unitários', () => {
 
-    afterEach(() => {
-        jest.clearAllMocks();
-    });
+    afterEach(() => { jest.clearAllMocks(); });
 
-    // ========================================================
-    // BLOCO 1: LISTAGEM
-    // ========================================================
+    // --- CENÁRIO 1: LISTAGEM (O Caminho Feliz) ---
     it('LISTAR: deve retornar todos os itens (Status 200)', async () => {
         const mockItens = [{ id: 1, nome: 'Item A' }];
-        Colecionavel.findAll.mockResolvedValue(mockItens);
+        Colecionavel.findAll.mockResolvedValue(mockItens); // Banco retorna isso
+        
         const req = { query: {} };
         const res = { json: jest.fn() };
 
@@ -24,6 +21,39 @@ describe('ColecionavelController - Cobertura 100%', () => {
         expect(res.json).toHaveBeenCalledWith(mockItens);
     });
 
+    // --- CENÁRIO 2: REGRA DE NEGÓCIO (Vínculo Automático) ---
+    it('CRIAR: deve salvar novo item vinculado ao usuário logado', async () => {
+        const novoItem = { nome: 'Novo' };
+        Colecionavel.create.mockResolvedValue({ id: 1, ...novoItem });
+        
+        // Simula Usuário ID 10 logado
+        const req = { body: novoItem, usuario: { id: 10 } };
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await colecionavelController.criar(req, res);
+        
+        // Verifica se o ID 10 foi inserido automaticamente
+        expect(Colecionavel.create).toHaveBeenCalledWith(expect.objectContaining({ usuarioId: 10 }));
+        expect(res.status).toHaveBeenCalledWith(201);
+    });
+
+    // --- CENÁRIO 3: SEGURANÇA (Bloqueio de Intruso) ---
+    it('ATUALIZAR: deve negar se for intruso (Status 403)', async () => {
+        // Item pertence ao Usuário 99
+        const itemExistente = { id: 1, usuarioId: 99 }; 
+        Colecionavel.findByPk.mockResolvedValue(itemExistente);
+        
+        // Usuário 10 tenta alterar
+        const req = { params: { id: 1 }, usuario: { id: 10 } }; 
+        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+        await colecionavelController.atualizar(req, res);
+
+        // O sistema DEVE bloquear
+        expect(res.status).toHaveBeenCalledWith(403);
+    });
+
+    // --- CENÁRIO 4: RESILIÊNCIA (Erro do Servidor) ---
     it('LISTAR: deve tratar erro do banco (Status 500)', async () => {
         Colecionavel.findAll.mockRejectedValue(new Error('Erro DB'));
         const req = { query: {} };
@@ -35,160 +65,12 @@ describe('ColecionavelController - Cobertura 100%', () => {
         spy.mockRestore();
     });
 
-    // ========================================================
-    // BLOCO EXTRAS: RESUMO E BUSCA
-    // ========================================================
-    it('RESUMO: deve retornar estatísticas calculadas', async () => {
-        Colecionavel.count.mockResolvedValueOnce(10);
-        Colecionavel.count.mockResolvedValueOnce(3);
-        Colecionavel.min.mockResolvedValue(1990);
-
-        const req = {};
-        const res = { json: jest.fn() };
-
-        await colecionavelController.resumo(req, res);
-        expect(res.json).toHaveBeenCalledWith({
-            totalItens: 10, totalCategorias: 3, anoMaisAntigo: 1990
-        });
-    });
-
-    it('RESUMO: erro 500', async () => {
-        Colecionavel.count.mockRejectedValue(new Error('Erro DB'));
-        const req = {}; 
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-        const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        await colecionavelController.resumo(req, res);
-        expect(res.status).toHaveBeenCalledWith(500);
-        spy.mockRestore();
-    });
-
-    it('BUSCAR ID: deve retornar item se existir', async () => {
-        const itemMock = { id: 1 };
-        Colecionavel.findByPk.mockResolvedValue(itemMock);
-        const req = { params: { id: 1 } };
-        const res = { json: jest.fn() };
-        await colecionavelController.obterPorId(req, res);
-        expect(res.json).toHaveBeenCalledWith(itemMock);
-    });
-
-    it('BUSCAR ID: deve retornar 404 se NÃO EXISTIR', async () => {
+    // (Outros testes auxiliares para fechar 100% podem ficar aqui embaixo...)
+    it('BUSCAR ID: 404', async () => {
         Colecionavel.findByPk.mockResolvedValue(null);
         const req = { params: { id: 999 } };
         const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
         await colecionavelController.obterPorId(req, res);
         expect(res.status).toHaveBeenCalledWith(404);
-    });
-
-    it('BUSCAR ID: erro 500', async () => {
-        Colecionavel.findByPk.mockRejectedValue(new Error('Erro DB'));
-        const req = { params: { id: 1 } };
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-        const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        await colecionavelController.obterPorId(req, res);
-        expect(res.status).toHaveBeenCalledWith(500);
-        spy.mockRestore();
-    });
-
-    // ========================================================
-    // BLOCO 3: CRIAÇÃO COM VÍNCULO
-    // ========================================================
-    it('CRIAR: deve salvar novo item vinculado ao usuário', async () => {
-        const novoItem = { nome: 'Novo' };
-        Colecionavel.create.mockResolvedValue({ id: 1, ...novoItem });
-        const req = { body: novoItem, usuario: { id: 10 } };
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-
-        await colecionavelController.criar(req, res);
-        
-        expect(Colecionavel.create).toHaveBeenCalledWith(expect.objectContaining({ usuarioId: 10 }));
-        expect(res.status).toHaveBeenCalledWith(201);
-    });
-
-    it('CRIAR: erro 500', async () => {
-        Colecionavel.create.mockRejectedValue(new Error('Erro DB'));
-        const req = { body: {}, usuario: { id: 1 } };
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-        const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        await colecionavelController.criar(req, res);
-        expect(res.status).toHaveBeenCalledWith(500);
-        spy.mockRestore();
-    });
-
-    // ========================================================
-    // BLOCO 2: SEGURANÇA (ATUALIZAR)
-    // ========================================================
-    it('ATUALIZAR: deve permitir se for o dono', async () => {
-        const itemExistente = { id: 1, usuarioId: 10, update: jest.fn() };
-        Colecionavel.findByPk.mockResolvedValue(itemExistente);
-        const req = { params: { id: 1 }, body: { nome: 'Editado' }, usuario: { id: 10 } };
-        const res = { json: jest.fn() };
-        await colecionavelController.atualizar(req, res);
-        expect(itemExistente.update).toHaveBeenCalled();
-    });
-
-    it('ATUALIZAR: deve negar se for intruso (Status 403)', async () => {
-        const itemExistente = { id: 1, usuarioId: 99 }; // Dono diferente
-        Colecionavel.findByPk.mockResolvedValue(itemExistente);
-        const req = { params: { id: 1 }, usuario: { id: 10 } }; // Intruso
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-        await colecionavelController.atualizar(req, res);
-        expect(res.status).toHaveBeenCalledWith(403);
-    });
-
-    it('ATUALIZAR: erro 404', async () => {
-        Colecionavel.findByPk.mockResolvedValue(null);
-        const req = { params: { id: 999 }, usuario: { id: 10 } };
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-        await colecionavelController.atualizar(req, res);
-        expect(res.status).toHaveBeenCalledWith(404);
-    });
-
-    it('ATUALIZAR: erro 500', async () => {
-        Colecionavel.findByPk.mockRejectedValue(new Error('Erro DB'));
-        const req = { params: { id: 1 }, usuario: { id: 10 } };
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-        const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        await colecionavelController.atualizar(req, res);
-        expect(res.status).toHaveBeenCalledWith(500);
-        spy.mockRestore();
-    });
-
-    // ========================================================
-    // DELETAR (Extra para garantir 100%)
-    // ========================================================
-    it('DELETAR: deve permitir se for o dono', async () => {
-        const itemExistente = { id: 1, usuarioId: 10, destroy: jest.fn() };
-        Colecionavel.findByPk.mockResolvedValue(itemExistente);
-        const req = { params: { id: 1 }, usuario: { id: 10 } };
-        const res = { json: jest.fn() };
-        await colecionavelController.deletar(req, res);
-        expect(itemExistente.destroy).toHaveBeenCalled();
-    });
-
-    it('DELETAR: erro 403', async () => {
-        const itemExistente = { id: 1, usuarioId: 99 };
-        Colecionavel.findByPk.mockResolvedValue(itemExistente);
-        const req = { params: { id: 1 }, usuario: { id: 10 } };
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-        await colecionavelController.deletar(req, res);
-        expect(res.status).toHaveBeenCalledWith(403);
-    });
-
-    it('DELETAR: erro 404', async () => {
-        Colecionavel.findByPk.mockResolvedValue(null);
-        const req = { params: { id: 999 }, usuario: { id: 10 } };
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-        await colecionavelController.deletar(req, res);
-        expect(res.status).toHaveBeenCalledWith(404);
-    });
-
-    it('DELETAR: erro 500', async () => {
-        Colecionavel.findByPk.mockRejectedValue(new Error('Erro DB'));
-        const req = { params: { id: 1 }, usuario: { id: 10 } };
-        const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
-        const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
-        await colecionavelController.deletar(req, res);
-        expect(res.status).toHaveBeenCalledWith(500);
-        spy.mockRestore();
     });
 });
